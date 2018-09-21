@@ -1,103 +1,84 @@
-<template lang='pug'>
-  .contain
-    .text(v-html='intro')
-    .hr
-    h2 Available datasets
-    .txt--center.my2(v-if='datasetScanstate === "idle"')
-      a.w100--s.btn--primary.scan-btn(href='#', v-on:click.prevent='scan') Scan available data
-    .txt--center.my2(v-if='datasetScanstate === "scanning"')
-      spinner
-    .my2(v-if='datasetScanstate === "scanned"')
-      .bg--orange.p1.warning.my1(v-if='unscannableMakets.length')
-        p.clickable(v-if='!viewUnscannable', v-on:click.prevent='toggleUnscannable') Some markets were unscannable, click here for details.
-        template(v-if='viewUnscannable')
-          p Unable to find datasets in the following markets:
-          .mx2(v-for='market in unscannableMakets')
-            | - {{ market.exchange }}:{{ market.currency }}:{{ market.asset }}
-      template(v-if='datasets.length')
-        table.full.data
-          thead
-            tr
-              th exchange
-              th currency
-              th asset
-              th from
-              th to
-              th duration
-          tbody
-            tr(v-for='set in datasets')
-              td {{ set.exchange }}
-              td {{ set.currency }}
-              td {{ set.asset }}
-              td {{ fmt(set.from) }}
-              td {{ fmt(set.to) }}
-              td {{ humanizeDuration(set.to.diff(set.from)) }}
-      template(v-if='!datasets.length')
-        p It looks like you don't have any local data yet.
-    .my2
-      h2 Import more data
-      p.text You can easily import more market data directly from exchanges using the importer.
-      router-link.btn--primary(to='/data/importer') Go to the importer!
+<template>
+  <v-container class="text-xs-center">
+    <div>
+      <h3>Local Data</h3>
+      <p class="subheading">Gekko needs local market data in order to backtest strategies. The local
+data can also be used in a warmup period when running a strategy against a
+live market.</p>
+    </div>
+    <h2>Available Datasets</h2>
+    <v-btn color="primary" v-if='datasetScanstate === "idle"' v-on:click.prevent='scan'>Scan Available data</v-btn>
+    <div class="text-xs-center" v-if='datasetScanstate === "scanning"'>
+      <v-progress-circular
+        indeterminate
+        color="primary"
+      ></v-progress-circular>
+    </div>
+    <div v-if='datasetScanstate === "scanned"'>
+      <v-data-table
+        v-model="selected"
+        :headers="headers"
+        :items="datasets"
+        class="elevation-1"
+      >
+        <template slot="headers" slot-scope="props">
+          <tr>
+            <th
+              v-for="header in props.headers"
+              :key="header"
+            >
+              {{ header }}
+            </th>
+          </tr>
+        </template>
+        <template slot="items" slot-scope="props">
+          <tr>
+            <td class="text-xs-left">{{ props.item.exchange }}</td>
+            <td class="text-xs-left">{{ props.item.asset }}</td>
+            <td class="text-xs-left">{{ props.item.currency }}</td>
+            <td class="text-xs-left">{{ fmt(props.item.from) }}</td>
+            <td class="text-xs-left">{{ fmt(props.item.to) }}</td>
+            <td class="text-xs-left">{{ humanizeDuration(props.item.to.diff(props.item.from)) }}</td>
+          </tr>
+        </template>
+        <template slot="no-data">
+          <v-alert :value="true" color="error" icon="warning">
+            You don't have vailable datasets :(
+          </v-alert>
+        </template>
+      </v-data-table>
+      <!-- {{ selected }} -->
+    </div>
+    <h2>Import More Data</h2>
+    <div>You can easily import more market data directly from exchanges using the importer</div>
+    <v-btn color="primary" to='/data/importer'>Go to the importer!</v-btn>
+  </v-container>
 </template>
 
 <script>
 
-import spinner from '../global/blockSpinner.vue'
-import marked from '../../tools/marked'
 import dataset from '../global/mixins/dataset'
 // global moment
 // global humanizeDuration
 
-let intro = marked(`
-
-## Local data
-
-Gekko needs local market data in order to backtest strategies. The local
-data can also be used in a warmup period when running a strategy against a
-live market.
-
-`);
 
 export default {
   mixins: [ dataset ],
-  components: {
-    spinner
-  },
-  data: () => {
-    return {
-      intro,
-      viewUnscannable: false
-    }
-  },
+  data: () => ({
+    headers: ['Exchange', 'Asset','Currency','From','To','Duration'],
+    viewUnscannable: false
+    
+  }),
   methods: {
     toggleUnscannable: function() { this.viewUnscannable = true },
     humanizeDuration: (n) => window.humanizeDuration(n),
-    fmt: mom => mom.format('YYYY-MM-DD HH:mm'),
+    fmt: mom => mom.format('YYYY-MM-DD HH:mm')
   }
 }
 </script>
 
-<style>
-
-.clickable {
-  cursor: pointer;
-}
-
-table.full {
-  width: 100%;
-}
-
-table.full td {
-  padding: 0.5rem 0;
-}
-
-table.full.data th {
-  text-align: left;
-  padding: 0.5rem 0;
-}
-
-.warning p {
-  margin: 0;
-  padding: 0;
-}
+<style scoped>
+  .v-progress-circular {
+    margin: 1rem
+  }
 </style>

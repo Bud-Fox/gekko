@@ -1,50 +1,78 @@
-<template lang='pug'>
-div
-  h3 Select a dataset
-  .txt--center.my2(v-if='datasetScanstate === "idle"')
-    a.w100--s.btn--primary.scan-btn(href='#', v-on:click.prevent='scan') Scan available data
-  .txt--center.my2(v-if='datasetScanstate === "scanning"')
-    spinner
-  .my2(v-if='datasetScanstate === "scanned"')
+<template>
 
-    div(v-if='datasets.length != 0')
-      table.full
-        thead
-          tr
-            th 
-            th exchange
-            th currency
-            th asset
-            th from
-            th to
-            th duration
-        tbody
-          tr(v-for='(set, i) in datasets')
-            td.radio
-              input(type='radio', name='dataset', :value='i', v-model='setIndex', v-bind:id='set.id')
-            td 
-              label(v-bind:for='set.id') {{ set.exchange }}
-            td 
-              label(v-bind:for='set.id') {{ set.currency }}
-            td
-              label(v-bind:for='set.id') {{ set.asset }}
-            td 
-              label(v-bind:for='set.id') {{ fmt(set.from) }}
-            td 
-              label(v-bind:for='set.id') {{ fmt(set.to) }}
-            td
-              label(v-bind:for='set.id') {{ humanizeDuration(set.to.diff(set.from)) }}
-      a.btn--primary(href='#', v-on:click.prevent='openRange', v-if='!rangeVisible') Adjust range
-      template(v-if='rangeVisible')
-        div
-          label(for='customFrom') From:
-          input(v-model='customFrom')
-        div
-          label(for='customTo') To:
-          input(v-model='customTo')
+  <v-container class="text-xs-center">
+    <div>
+      <h3>Select a dataset</h3>
+      <v-btn v-if='datasetScanstate === "idle"' v-on:click.prevent='scan'>Scan available data</v-btn>
+      <div class="text-xs-center" v-if='datasetScanstate === "scanning"'>
+        <v-progress-circular
+          indeterminate
+          color="primary"
+        ></v-progress-circular>
+      </div>
+      <div v-if='datasetScanstate === "scanned"'>
+        <v-data-table
+          :headers="headers"
+          :items="datasets"
+          class="elevation-1"
+        >
+          <template slot="headers" slot-scope="props">
+            <tr>
+              <th></th>
+              <th
+                v-for="header in props.headers"
+                :key="header"
+              >
+                {{ header }}
+              </th>
+            </tr>
+          </template>
+          <template slot="items" slot-scope="props">
+            <tr :active="props.expanded" @click="props.expanded = !props.expanded; setIndex = props.index">
+              <td>
+                <v-checkbox
+                  :input-value="props.expanded"
+                  primary
+                  hide-details
+                ></v-checkbox>
+              </td>
+              <td class="text-xs-left">{{ props.item.exchange }}</td>
+              <td class="text-xs-left">{{ props.item.asset }}</td>
+              <td class="text-xs-left">{{ props.item.currency }}</td>
+              <td class="text-xs-left">{{ fmt(props.item.from) }}</td>
+              <td class="text-xs-left">{{ fmt(props.item.to) }}</td>
+              <td class="text-xs-left">{{ humanizeDuration(props.item.to.diff(props.item.from)) }}</td>
+            </tr>
+          </template>
+          <template slot="no-data">
+            <v-alert :value="true" color="error" icon="warning">
+              You don't have vailable datasets :(
+            </v-alert>
+            <v-btn to="/data/importer">Lets add more</v-btn>
+          </template>
+        </v-data-table>
+        <v-btn v-on:click.prevent='openRange' v-if='!rangeVisible'>Adjust range</v-btn>
+        <template v-if='rangeVisible'>
+          <v-layout class="pt-2">
+            <v-flex xs12 sm6>
+              <div class="subheading">From</div>
+              <v-date-picker v-model="customFrom" color="green lighten-1"></v-date-picker>
+              <!-- <v-time-picker v-model="customFrom"></v-time-picker> -->
+            </v-flex>
+            <v-flex>
+              <div class="subheading">To</div>
+              <v-date-picker v-model="customTo" color="green lighten-1" header-color="primary"></v-date-picker>
+            </v-flex>
+          </v-layout>
+        </template>
+        {{ setIndex }}
+        <!-- {{ this.datasets[0] }} -->
+      </div>
+    </div>
+  </v-container>
 
-    em(v-else) No Data found 
-      a(href='#/data/importer') Lets add some
+
+
 
 </template>
 
@@ -64,8 +92,10 @@ export default {
   data: () => {
     return {
       setIndex: -1,
-      customTo: false,
-      customFrom: false,
+      selected: -1,
+      headers: ['Exchange', 'Asset','Currency','From','To','Duration'],
+      customTo: null,
+      customFrom: null,
       rangeVisible: false,
       set: false
     };

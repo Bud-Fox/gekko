@@ -3,7 +3,17 @@ import App from './App.vue'
 import Vuetify from 'vuetify'
 import 'vuetify/dist/vuetify.min.css'
 import 'material-design-icons-iconfont/dist/material-design-icons.css'
-Vue.use(Vuetify);
+Vue.use(Vuetify, {
+  theme: {
+    primary: '#dbb461',
+    secondary: '#dbb461',
+    accent: '#591211',
+    error: '#591211',
+    info: '#591211',
+    success: '#dbb461',
+    warning: '#591211'
+  }
+});
 
 import VueRouter from 'vue-router'
 Vue.use(VueRouter);
